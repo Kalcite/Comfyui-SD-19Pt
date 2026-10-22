@@ -50,7 +50,7 @@ Comfyui-SD-19Pt/
 │  ├─ unblock-launcher.ps1        # 解除下载文件锁定
 │  ├─ batch_upscale.py            # ComfyUI HTTP API 批量超分
 │  └─ lib/                        # Common.ps1 / download.py / filter_requirements.py
-├─ workflows/                     # 界面版 + API 版生图/超分
+├─ workflows/                     # 界面版 + API 版生图/超分工作流 + README
 ├─ ICO/                           # 图标源（Logomark/字标 SVG/ICO）
 ├─ docs/                          # 用户文档截图
 ├─ config/launcher.example.json   # 配置模板
@@ -98,7 +98,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\publish-launcher.ps1
 <Company>@1999Pt</Company>
 <Authors>@1999Pt</Authors>
 <Copyright>Copyright © 2026 @1999Pt</Copyright>
-<FileVersion>1.1.1.0</FileVersion>
+<FileVersion>1.1.2.0</FileVersion>
 ```
 
 - `Assets/app.ico` 是深色圆角底 + 黄色 Logomark 的多尺寸 ICO；
@@ -326,7 +326,7 @@ Invoke-RestMethod http://127.0.0.1:8188/prompt -Method Post `
 
 - `launcher/` 源码与 Assets；
 - `scripts/`、`workflows/`、`docs/`、`ICO/`；
-- `README.md`、`developer.md`、`config/launcher.example.json`、`requirements.lock.txt`。
+- `README.md`、`developer.md`、`updata.md`、`config/launcher.example.json`、`requirements.lock.txt`。
 
 不要提交：
 

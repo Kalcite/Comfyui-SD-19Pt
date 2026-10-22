@@ -1,5 +1,23 @@
 # 更新日志
 
+## v1.1.2 — 2026-10-23
+
+### 新增
+
+- 内置工作流：
+  - `txt2img_sd15.json`：SD1.5 文生图；
+  - `img2img_sd15.json`：SD1.5 图生图；
+  - `txt2img_hires_sd15.json`：512 → 1024 高清修复；
+  - `upscale_4x.json`：4x 超分；
+  - `flux_txt2img.json`：Flux.1-dev 文生图（可选，需自备模型）；
+  - 对应的 `api_*.json` 版本。
+- 新增 [workflows/README.md](workflows/README.md)：参数、模型要求、界面/API 用法、验证记录。
+
+### 验证
+
+- SD1.5 文生图、图生图、高清修复、4x 超分均已通过 ComfyUI 0.42.0 执行；
+- Flux 工作流完成节点/连线/输入结构检查，但本地无 Flux 模型，未执行出图。
+
 ## v1.1.1 — 2026-10-23
 
 ### 修复

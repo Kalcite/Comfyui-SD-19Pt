@@ -22,7 +22,7 @@
 | PyTorch | 2.9.1 + CUDA 13.0（RTX 4060 Laptop 实测） |
 | 前端 | comfyui-frontend-package 1.57.1 |
 | 模板 | comfyui-workflow-templates 0.11.93 |
-| 启动器 | .NET 8 + Avalonia 11.3.22，v1.1.1.0（本地代码签名） |
+| 启动器 | .NET 8 + Avalonia 11.3.22，v1.1.2.0（本地代码签名） |
 
 已验证：512×512 SD1.5 生图约 7 秒；4x-UltraSharp 将 512 放大到 2048；启动器启停正常。
 
@@ -156,7 +156,24 @@ Flux 模型体积大且受 HuggingFace 许可约束，请自行从官方仓库�
 
 ---
 
-## 5. 图片超分辨率
+## 5. 内置工作流
+
+`workflows\` 目录自带可直接拖入 ComfyUI 的界面版工作流，以及 API 版：
+
+| 工作流 | 用途 |
+| --- | --- |
+| `txt2img_sd15.json` | SD1.5 文生图 |
+| `img2img_sd15.json` | SD1.5 图生图（denoise 0.6） |
+| `txt2img_hires_sd15.json` | 512 → 1024 高清修复 |
+| `upscale_4x.json` | 4x 超分 |
+| `flux_txt2img.json` | Flux.1-dev 文生图（需自备 Flux 模型） |
+| `api_*.json` | 对应的 API 版，供脚本/批量调用 |
+
+详细参数、模型要求和 API 示例见 [workflows/README.md](workflows/README.md)。
+
+---
+
+## 6. 图片超分辨率
 
 1. 启动 ComfyUI，打开 WebUI；
 2. 加载 `workflows\upscale_4x.json`；
@@ -175,20 +192,20 @@ Flux 模型体积大且受 HuggingFace 许可约束，请自行从官方仓库�
 
 ---
 
-## 6. 简单生图
+## 7. 生图、图生图与高清修复
 
-1. 加载 `workflows\txt2img_sd15.json`；
-2. 修改正/负提示词；
-3. 默认 512×512、25 步、euler/normal、CFG 7；
-4. Queue，结果在 `output\sd15\`。
+- **文生图**：加载 `workflows\txt2img_sd15.json`，默认 512×512、25 步、euler/normal、CFG 7；
+- **图生图**：加载 `workflows\img2img_sd15.json`，Load Image 换成自己的图，`denoise` 0.3~0.45 轻改、0.55~0.7 重绘；
+- **高清修复**：加载 `workflows\txt2img_hires_sd15.json`，512 → 1024，第二阶段 denoise 0.55；
+- Queue 后结果在 `output\sd15\`。
 
 ![SD1.5 示例](docs/sample-txt2img.png)
 
-8GB 显存建议先 512×512；OOM 时选“低显存”或缩小尺寸。
+8GB 显存建议先 512×512；OOM 时选“低显存”或缩小尺寸；1024 高清修复阶段可能较慢。
 
 ---
 
-## 7. Git 代理
+## 8. Git 代理
 
 克隆/更新 ComfyUI 时：
 
@@ -205,7 +222,7 @@ Flux 模型体积大且受 HuggingFace 许可约束，请自行从官方仓库�
 
 ---
 
-## 8. 常见问题
+## 9. 常见问题
 
 **打开目录报 `explorer.exe 0xc0000142`？**
 本版本优先复用现有资源管理器的 Shell COM（`Shell.Application.Explore`，带超时），失败后用 `cmd start` 交给 Shell，不再直接启动 `explorer.exe`；若仍失败，请确认系统资源管理器可用。
@@ -230,7 +247,7 @@ Flux 模型体积大且受 HuggingFace 许可约束，请自行从官方仓库�
 
 ---
 
-## 9. 目录结构
+## 10. 目录结构
 
 ```text
 <安装目录>\
@@ -239,7 +256,7 @@ Flux 模型体积大且受 HuggingFace 许可约束，请自行从官方仓库�
 ├─ .venv\                      # ComfyUI 虚拟环境
 ├─ ComfyUI\                    # 源码 + models
 ├─ launcher\                   # Avalonia 启动器源码/发布产物
-├─ workflows\                  # 超分/生图工作流
+├─ workflows\                  # 内置生图/超分工作流 + README
 ├─ scripts\                    # 环境构建、启动、批量超分
 ├─ config\launcher.json        # 本机配置
 ├─ user\ input\ output\        # 用户/输入/输出
@@ -251,7 +268,7 @@ Flux 模型体积大且受 HuggingFace 许可约束，请自行从官方仓库�
 
 ---
 
-## 10. 许可
+## 11. 许可
 
 - 启动器代码：Copyright © 2026 **@1999Pt**。
 - 更新日志：[updata.md](updata.md)。
