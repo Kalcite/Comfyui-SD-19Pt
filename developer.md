@@ -44,6 +44,7 @@ Comfyui-SD-19Pt/
 │  ├─ check-env.ps1               # 环境检查
 │  ├─ publish-launcher.ps1        # dotnet publish
 │  ├─ launch-ui.ps1               # 通过 dotnet 主机隐藏启动 DLL
+│  ├─ create-shortcut.ps1         # 生成带图标的本地快捷方式
 │  ├─ sign-launcher.ps1           # 用受信任证书做 Authenticode 签名
 │  ├─ unblock-launcher.ps1        # 解除下载文件锁定
 │  ├─ batch_upscale.py            # ComfyUI HTTP API 批量超分
@@ -176,13 +177,9 @@ Program.cs → App.axaml → MainWindow
 
 ### 4.3 打开目录
 
-`OpenFolder` 优先使用 Windows Shell：
+`OpenFolder` 优先复用现有 Explorer 的 Shell COM（`Shell.Application.Explore`），在后台线程执行并限时 1.5 秒；超时/失败后用 `cmd /c start "" "<path>"` 交给 Shell，最后才回退到 ShellExecute。
 
-```csharp
-Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true, Verb = "open" });
-```
-
-不再直接拼 `explorer.exe "path"`，避免部分环境下 `0xc0000142`；失败时再回退 `explorer.exe` + `ArgumentList`。
+不再直接运行 `explorer.exe "path"`，避免部分环境下 `0xc0000142`，也避免 COM 在被注入的 Explorer 中阻塞 UI。
 
 ---
 

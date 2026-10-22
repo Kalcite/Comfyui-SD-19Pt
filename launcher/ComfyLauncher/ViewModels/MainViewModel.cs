@@ -1026,24 +1026,30 @@ public sealed class MainViewModel : ObservableObject
         {
             Directory.CreateDirectory(path);
 
-            // 优先复用现有 Explorer 的 Shell COM，不再启动新的 explorer.exe；
-            // 这能避免部分环境下 explorer.exe 初始化失败（0xc0000142）。
-            if (TryOpenFolderCom(path))
+            // COM 在某些被注入/受限的 Explorer 环境中可能长时间阻塞，
+            // 放到后台线程并限时等待，失败后改用 cmd start，避免卡住 UI。
+            var comTask = Task.Run(() => TryOpenFolderCom(path));
+            if (comTask.Wait(1500) && comTask.Result)
             {
                 AppendLog(new LogLine(LogKind.System, "已打开目录: " + path));
                 return;
             }
 
-            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true, Verb = "open" });
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/c start \"\" \"" + path.Replace("\"", "\"\"") + "\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            Process.Start(startInfo);
             AppendLog(new LogLine(LogKind.System, "已打开目录: " + path));
         }
         catch (Exception ex)
         {
             try
             {
-                var fallback = new ProcessStartInfo { FileName = "explorer.exe", UseShellExecute = true };
-                fallback.ArgumentList.Add(path);
-                Process.Start(fallback);
+                Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true, Verb = "open" });
             }
             catch
             {

@@ -14,5 +14,5 @@ $psi = New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName = $dotnet
 $psi.Arguments = '"' + $Dll + '"'
 $psi.UseShellExecute = $true
-$psi.WindowStyle = 'Hidden'
+$psi.WindowStyle = 'Normal'
 [System.Diagnostics.Process]::Start($psi) | Out-Null

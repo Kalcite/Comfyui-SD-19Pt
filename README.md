@@ -37,7 +37,7 @@
 
 如果环境不完整，进入 **环境** 页，选择 CUDA/后端组合后点 **一键构建**。模型下载默认关闭，可在“模型”页单独执行。
 
-> `run-launcher.bat` 会优先通过 `dotnet ComfyLauncher.dll` 启动，避免直接运行未签名 EXE 被 SmartScreen/Smart App Control 拦截。若你直接双击 `launcher\publish\ComfyLauncher.exe` 出现“无法验证发布者”或长时间无响应，请改用 `run-launcher.bat`；需要正式分发时请给 EXE 做代码签名。
+> `run-launcher.bat` 会优先通过 `dotnet ComfyLauncher.dll` 启动，避免直接运行未签名 EXE 被 SmartScreen/Smart App Control 拦截。若你直接双击 `launcher\publish\ComfyLauncher.exe` 出现“无法验证发布者”或长时间无响应，请改用 `run-launcher.bat`；也可以运行 `scripts\create-shortcut.ps1` 生成带图标的“ComfyUI 启动器”快捷方式。需要正式分发时请给 EXE 做代码签名。
 
 命令行方式：
 
@@ -208,7 +208,7 @@ Flux 模型体积大且受 HuggingFace 许可约束，请自行从官方仓库�
 ## 8. 常见问题
 
 **打开目录报 `explorer.exe 0xc0000142`？**
-本版本优先使用 Shell COM（`Shell.Application.Explore`）复用现有资源管理器，不再直接启动 `explorer.exe`；若仍失败，请确认系统资源管理器可用。
+本版本优先复用现有资源管理器的 Shell COM（`Shell.Application.Explore`，带超时），失败后用 `cmd start` 交给 Shell，不再直接启动 `explorer.exe`；若仍失败，请确认系统资源管理器可用。
 
 **双击 EXE 长时间无响应 / 提示无法验证发布者？**
 这是未签名 EXE 被 Windows SmartScreen/Smart App Control 检查导致的。请双击 `run-launcher.bat`（通过微软签名的 dotnet 主机加载 DLL），或运行 `scripts\unblock-launcher.ps1` 解除下载锁定；正式分发需要受信任的代码签名证书，可参考 `scripts\sign-launcher.ps1`。

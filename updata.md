@@ -12,6 +12,7 @@
 - **自动打开 WebUI**：启动就绪后以系统默认浏览器链接方式打开；`app.manifest` 使用 `asInvoker`，避免浏览器继承管理员权限后提示“以管理员身份重启”。
 - **打开目录修复**：优先使用 Shell COM `Shell.Application.Explore`，不再直接启动 `explorer.exe`，修复 `0xc0000142`。
 - **安全启动入口**：`run-launcher.bat` 优先通过 `dotnet ComfyLauncher.dll` 启动（微软签名的 dotnet 主机），避免未签名 EXE 触发 SmartScreen；直接运行 EXE 时尝试 `Unblock-File`。
+- **快捷方式**：`scripts/create-shortcut.ps1` 生成带图标的“ComfyUI 启动器”快捷方式。
 - **代码签名/解除锁定脚本**：`scripts/sign-launcher.ps1` 支持 PFX/证书指纹；`scripts/unblock-launcher.ps1` 解除下载锁定。
 - **深浅色主题完善**：控制台、日志、标题栏、窗口图标全部随主题切换；透明 Logomark 图标。
 - **文档拆分**：`README.md` 面向用户，`developer.md` 面向开发与构建。

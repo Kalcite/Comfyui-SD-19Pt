@@ -35,3 +35,5 @@ __pycache__/
 *.user
 Thumbs.db
 desktop.ini
+
+*.lnk
