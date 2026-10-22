@@ -43,6 +43,9 @@ Comfyui-SD-19Pt/
 │  ├─ start-comfy.ps1             # 命令行启动
 │  ├─ check-env.ps1               # 环境检查
 │  ├─ publish-launcher.ps1        # dotnet publish
+│  ├─ launch-ui.ps1               # 通过 dotnet 主机隐藏启动 DLL
+│  ├─ sign-launcher.ps1           # 用受信任证书做 Authenticode 签名
+│  ├─ unblock-launcher.ps1        # 解除下载文件锁定
 │  ├─ batch_upscale.py            # ComfyUI HTTP API 批量超分
 │  └─ lib/                        # Common.ps1 / download.py / filter_requirements.py
 ├─ workflows/                     # 界面版 + API 版生图/超分
@@ -50,7 +53,8 @@ Comfyui-SD-19Pt/
 ├─ docs/                          # 用户文档截图
 ├─ config/launcher.example.json   # 配置模板
 ├─ requirements.lock.txt          # 验证环境的依赖锁定
-└─ developer.md
+├─ developer.md                    # 开发/构建/发布说明
+└─ updata.md                       # 版本更新日志
 ```
 
 ### 本机部署目录（不提交）
@@ -108,12 +112,28 @@ powershell -ExecutionPolicy Bypass -File .\scripts\publish-launcher.ps1
 
 `app.manifest` 声明 `requestedExecutionLevel level="asInvoker"`，启动器不会请求管理员权限；自动打开 WebUI 时使用系统默认浏览器的链接方式，管理员身份下则交给 Explorer 打开，避免浏览器继承管理员权限后提示“以管理员身份重启”。
 
+`run-launcher.bat` 优先执行：
+
+```text
+powershell -File scripts\launch-ui.ps1 -Dll launcher\publish\ComfyLauncher.dll
+  → Start-Process dotnet.exe ComfyLauncher.dll -WindowStyle Hidden
+```
+
+`dotnet.exe` 由 Microsoft 签名，可绕开未签名自定义 EXE 的 SmartScreen/Smart App Control 拦截；直接运行 EXE 时批处理会先尝试 `Unblock-File`。
+
 文件属性会显示 Company/Copyright，但“未知发布者”弹窗只有在使用受信任证书做 Authenticode 签名后才会消失。私钥 `.pfx` 不入库；签名命令示例：
 
 ```powershell
 signtool sign /fd SHA256 /f <cert.pfx> /p <password> `
   /tr http://timestamp.digicert.com /td SHA256 `
   .\launcher\publish\ComfyLauncher.exe
+```
+
+也可以使用 [scripts/sign-launcher.ps1](scripts/sign-launcher.ps1)：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\sign-launcher.ps1 `
+  -PfxPath <cert.pfx> -PfxPassword <password>
 ```
 
 ---

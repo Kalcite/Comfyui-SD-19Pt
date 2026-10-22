@@ -1003,13 +1003,39 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    private static bool TryOpenFolderCom(string path)
+    {
+        if (!OperatingSystem.IsWindows()) return false;
+        try
+        {
+            var shellType = Type.GetTypeFromProgID("Shell.Application");
+            if (shellType == null) return false;
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            shell.Explore(path);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private void OpenFolder(string path)
     {
         try
         {
             Directory.CreateDirectory(path);
-            // 交给 Windows Shell 打开目录，避免直接启动 explorer.exe 时在部分环境出现 0xc0000142。
+
+            // 优先复用现有 Explorer 的 Shell COM，不再启动新的 explorer.exe；
+            // 这能避免部分环境下 explorer.exe 初始化失败（0xc0000142）。
+            if (TryOpenFolderCom(path))
+            {
+                AppendLog(new LogLine(LogKind.System, "已打开目录: " + path));
+                return;
+            }
+
             Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true, Verb = "open" });
+            AppendLog(new LogLine(LogKind.System, "已打开目录: " + path));
         }
         catch (Exception ex)
         {
