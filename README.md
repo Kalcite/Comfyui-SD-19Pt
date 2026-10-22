@@ -197,13 +197,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\publish-launcher.ps1
   - `ICO\Logomark Ink.ico` → `Assets\logomark-ink.ico`：浅色主题窗口/任务栏图标；
 - `Assets\app.ico` 由深色圆角底 + 黄色 Logomark 合成，作为 EXE 文件图标（无白边）；
 - `MainWindow` 在主题切换时同步更换 `Window.Icon`；标题栏左上角与顶栏 logo 同步切换；
-- 横向字标 `Core logo ink` 经 SVG 渲染为透明 `docs/logo.png`，用于 README 品牌展示。
+- 横向字标 `Core logo` 渲染为 `docs/logo.png`（深色底 + 黄色字，浅色/深色页面都可见）。
 
 ### 4.3 浅色 / 深色主题
 
 - 入口：**设置与代理 → 界面主题**，切换开关即时生效；
 - 主题通过 `App.axaml` 的 `ThemeDictionaries` 定义（背景、卡片、边框、文本、强调色、控制台、日志颜色）；
 - 控制台在浅色模式下也切换为浅色背景、深色日志文本，不再固定深色；
+- Windows 标题栏同步切换深色/浅色（DWM immersive dark mode）；
 - 选择的主题写入 `config\launcher.json`，下次启动自动恢复；窗口图标随主题切换。
 
 | 深色 | 浅色 |

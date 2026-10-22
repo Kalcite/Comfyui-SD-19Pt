@@ -471,7 +471,7 @@ public sealed class MainViewModel : ObservableObject
         StatusText = "运行中";
         StatusDetail = url;
         AppendLog(new LogLine(LogKind.Success, $"ComfyUI 已就绪: {url}"));
-        AppendLog(new LogLine(LogKind.System, "提示：可在左侧工作流列表加载 workflows 目录中的超分/生图工作流。"));
+        AppendLog(new LogLine(LogKind.System, "提示：可在 ComfyUI 的 Workflow 菜单加载 workflows 目录中的超分/生图工作流。"));
         if (Settings.AutoOpenBrowser) OpenUrl(url);
     }
 

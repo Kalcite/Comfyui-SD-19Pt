@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Platform;
 using Avalonia.Platform.Storage;
@@ -9,8 +10,13 @@ namespace ComfyLauncher.Views;
 
 public partial class MainWindow : Window
 {
+    private const int DwmUseImmersiveDarkMode = 20;
+    private const int DwmUseImmersiveDarkModeBefore20H1 = 19;
     private readonly MainViewModel _viewModel;
     private bool _closing;
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
     public MainWindow()
     {
@@ -30,6 +36,7 @@ public partial class MainWindow : Window
             if (e.PropertyName is nameof(MainViewModel.IsLightTheme) or nameof(MainViewModel.IsDarkTheme))
             {
                 UpdateWindowIcon();
+                ApplyTitleBarTheme();
             }
         };
         UpdateWindowIcon();
@@ -55,9 +62,22 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ApplyTitleBarTheme()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var handle = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+        if (handle == IntPtr.Zero) return;
+        var dark = _viewModel.IsLightTheme ? 0 : 1;
+        if (DwmSetWindowAttribute(handle, DwmUseImmersiveDarkMode, ref dark, sizeof(int)) != 0)
+        {
+            DwmSetWindowAttribute(handle, DwmUseImmersiveDarkModeBefore20H1, ref dark, sizeof(int));
+        }
+    }
+
     private async void OnOpened(object? sender, EventArgs e)
     {
         UpdateLayoutLimits();
+        ApplyTitleBarTheme();
         Dispatcher.UIThread.Post(() =>
         {
             UpdateLayoutLimits();
