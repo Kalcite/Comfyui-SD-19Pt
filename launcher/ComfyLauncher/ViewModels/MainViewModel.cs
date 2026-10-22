@@ -89,6 +89,17 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<LogLine> LogLines { get; } = new();
     public ObservableCollection<StatusItem> StatusItems { get; } = new();
     public ObservableCollection<ModelItem> Models { get; } = new();
+    public ObservableCollection<ModelCategory> ModelCategories { get; } = new();
+
+    public IReadOnlyList<string> TorchProfiles { get; } = new[]
+    {
+        "CUDA 13.0 + torch 2.9.1",
+        "CUDA 12.8 + torch 2.9.1",
+        "CUDA 12.6 + torch 2.9.1",
+        "CUDA 12.4 + torch 2.6.0",
+        "DirectML (torch-directml)",
+        "CPU + torch 2.9.1"
+    };
 
     public IReadOnlyList<string> VramModes { get; } = new[]
     {
@@ -590,7 +601,7 @@ public sealed class MainViewModel : ObservableObject
             var version = lines.ElementAtOrDefault(0) ?? "?";
             var cuda = lines.ElementAtOrDefault(1) ?? "?";
             var device = lines.ElementAtOrDefault(2) ?? "?";
-            items.Add(new StatusItem("PyTorch / CUDA", $"{version}, CUDA={cuda}, {device}",
+            items.Add(new StatusItem("PyTorch / CUDA", $"{version}, CUDA={cuda}, {device}  ·  {Settings.TorchProfile}",
                 cuda.Equals("True", StringComparison.OrdinalIgnoreCase) ? StatusState.Ok : StatusState.Warn));
         }
         else
@@ -631,6 +642,10 @@ public sealed class MainViewModel : ObservableObject
         {
             if (!await CloneComfyCoreAsync()) return;
         }
+        else if (!string.IsNullOrWhiteSpace(Settings.ComfyVersion))
+        {
+            if (!await CheckoutComfyVersionAsync(ComfyPathResolved, Settings.ComfyVersion.Trim())) return;
+        }
 
         if (!File.Exists(VenvPythonPath))
         {
@@ -643,20 +658,43 @@ public sealed class MainViewModel : ObservableObject
             if (!await InstallTorchCoreAsync()) return;
         }
 
-        var modelRoot = ModelsPathResolved;
-        if (SafeFiles(Path.Combine(modelRoot, "checkpoints"), "*.safetensors", "*.ckpt", "*.pt").Length == 0 ||
-            SafeFiles(Path.Combine(modelRoot, "upscale_models"), "*.pth", "*.safetensors", "*.onnx").Length == 0)
+        if (Settings.DownloadModelsAfterSetup)
         {
             if (!await RunScriptAsync("setup-models.ps1", $"-Root {Q(_root)}")) return;
+        }
+        else
+        {
+            AppendLog(new LogLine(LogKind.System, "已跳过模型下载（可选）。可在“模型”页或 scripts\\setup-models.ps1 单独下载。"));
         }
 
         await CheckEnvironmentCoreAsync();
         AppendLog(new LogLine(LogKind.Success, "一键构建流程结束。"));
     }
 
+    private (string Backend, string Cuda, string Torch) GetTorchSelection()
+    {
+        var profile = Settings.TorchProfile ?? "";
+        if (profile.Contains("DirectML", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("DirectML", "", "");
+        }
+        if (profile.StartsWith("CPU", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("CPU", "", "2.9.1");
+        }
+
+        var cuda = Regex.Match(profile, @"CUDA\s+([\d.]+)").Groups[1].Value;
+        var torch = Regex.Match(profile, @"torch\s+([\d.]+)").Groups[1].Value;
+        return ("CUDA", string.IsNullOrEmpty(cuda) ? "13.0" : cuda,
+            string.IsNullOrEmpty(torch) ? "2.9.1" : torch);
+    }
+
     private async Task<bool> InstallTorchCoreAsync()
     {
-        var args = $"-Root {Q(_root)} -VenvPath {Q(VenvPathResolved)} -TorchIndex {Q(Settings.TorchIndex)}";
+        var (backend, cuda, torch) = GetTorchSelection();
+        var args = $"-Root {Q(_root)} -VenvPath {Q(VenvPathResolved)} -Backend {backend}";
+        if (!string.IsNullOrWhiteSpace(cuda)) args += $" -CudaVersion {cuda}";
+        if (!string.IsNullOrWhiteSpace(torch)) args += $" -TorchVersion {torch}";
         if (!string.IsNullOrWhiteSpace(Settings.PipIndex)) args += $" -PipIndex {Q(Settings.PipIndex)}";
         if (!string.IsNullOrWhiteSpace(Settings.GitProxy)) args += $" -Proxy {Q(Settings.GitProxy)}";
         var ok = await RunScriptAsync("setup-torch.ps1", args);
@@ -681,9 +719,39 @@ public sealed class MainViewModel : ObservableObject
         if (ok)
         {
             AppendLog(new LogLine(LogKind.Success, "ComfyUI 源码已就绪。"));
+            if (!string.IsNullOrWhiteSpace(Settings.ComfyVersion))
+            {
+                ok = await CheckoutComfyVersionAsync(target, Settings.ComfyVersion.Trim());
+            }
             await CheckEnvironmentCoreAsync();
         }
         return ok;
+    }
+
+    private async Task<bool> CheckoutComfyVersionAsync(string target, string version)
+    {
+        const string gitOptions = "-c http.sslBackend=openssl -c http.proxy= -c https.proxy= ";
+        AppendLog(new LogLine(LogKind.System, $"切换 ComfyUI 版本/提交: {version}"));
+
+        await ProcessUtil.RunAsync("git", $"{gitOptions}-C {Q(target)} fetch --tags --depth 1 origin",
+            target, TimeSpan.FromMinutes(3));
+        var checkout = await ProcessUtil.RunAsync("git", $"{gitOptions}-C {Q(target)} checkout {Q(version)}",
+            target, TimeSpan.FromMinutes(1));
+        if (checkout.ExitCode != 0)
+        {
+            var fetch = await ProcessUtil.RunAsync("git", $"{gitOptions}-C {Q(target)} fetch --depth 1 origin {Q(version)}",
+                target, TimeSpan.FromMinutes(3));
+            checkout = await ProcessUtil.RunAsync("git", $"{gitOptions}-C {Q(target)} checkout FETCH_HEAD",
+                target, TimeSpan.FromMinutes(1));
+            if (fetch.ExitCode != 0 || checkout.ExitCode != 0)
+            {
+                AppendLog(new LogLine(LogKind.Err, $"无法切换到 {version}，ComfyUI 保持当前版本。"));
+                return false;
+            }
+        }
+
+        AppendLog(new LogLine(LogKind.Success, $"ComfyUI 已切换到 {version}。"));
+        return true;
     }
 
     private async Task<bool> RunScriptAsync(string scriptName, string arguments)
@@ -729,30 +797,88 @@ public sealed class MainViewModel : ObservableObject
         }
 
         Models.Clear();
+        ModelCategories.Clear();
         var modelRoot = ModelsPathResolved;
-        AddModels(modelRoot, "checkpoints", "生图", "*.safetensors", "*.ckpt", "*.pt");
-        AddModels(modelRoot, "upscale_models", "超分", "*.pth", "*.safetensors", "*.onnx");
-        AddModels(modelRoot, "loras", "LoRA", "*.safetensors", "*.pt");
-        AddModels(modelRoot, "vae", "VAE", "*.safetensors", "*.pt", "*.pth");
-        OnPropertyChanged(nameof(Models));
-    }
 
-    private void AddModels(string modelRoot, string sub, string type, params string[] patterns)
-    {
-        var dir = Path.Combine(modelRoot, sub);
-        if (!Directory.Exists(dir)) return;
-        foreach (var pattern in patterns)
+        void AddCategory(string key, string name, string description, string sample,
+            string[] patterns, params string[] extraDirectories)
         {
-            foreach (var file in Directory.EnumerateFiles(dir, pattern, SearchOption.TopDirectoryOnly))
+            var dir = Path.Combine(modelRoot, key);
+            var files = new List<string>();
+            foreach (var pattern in patterns)
+            {
+                files.AddRange(SafeFiles(dir, pattern));
+                foreach (var extra in extraDirectories)
+                {
+                    files.AddRange(SafeFiles(Path.Combine(modelRoot, extra), pattern));
+                }
+            }
+
+            files = files.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var category = new ModelCategory(key, name, dir, description, sample, () => OpenFolder(dir))
+            {
+                Count = files.Count,
+                FilesPreview = files.Count == 0
+                    ? "目录为空；放入文件后点“刷新”。"
+                    : "已找到: " + string.Join(" · ", files.Select(Path.GetFileName).Take(4))
+            };
+            ModelCategories.Add(category);
+
+            foreach (var file in files)
             {
                 try
                 {
                     var info = new FileInfo(file);
-                    Models.Add(new ModelItem(info.Name, type, info.Length, info.FullName));
+                    Models.Add(new ModelItem(info.Name, name, info.Length, info.FullName));
                 }
                 catch { }
             }
         }
+
+        AddCategory("checkpoints", "生图大模型 / Checkpoint",
+            "SD1.5、SDXL 等单文件 checkpoint；最常用的生图入口。",
+            "v1-5-pruned-emaonly.safetensors",
+            new[] { "*.safetensors", "*.ckpt", "*.pt" });
+
+        AddCategory("diffusion_models", "扩散模型 / Diffusion Model",
+            "Flux、SD3 等分离式 UNET/DiT；新版 ComfyUI 读取此目录（旧版也兼容 unet）。",
+            "flux1-dev.safetensors",
+            new[] { "*.safetensors", "*.gguf", "*.pt" }, "unet");
+
+        AddCategory("text_encoders", "文本编码器 / 语言解释器",
+            "Flux 需要 CLIP-L + T5；旧目录 clip 也兼容。",
+            "clip_l.safetensors、t5xxl_fp16.safetensors",
+            new[] { "*.safetensors", "*.pt", "*.gguf" }, "clip");
+
+        AddCategory("vae", "VAE / 潜空间解码器",
+            "Flux 使用 ae.safetensors；SD1.5 常用 vae-ft-mse-840000-ema-pruned。",
+            "ae.safetensors、vae-ft-mse-840000-ema-pruned.safetensors",
+            new[] { "*.safetensors", "*.pt", "*.pth" });
+
+        AddCategory("loras", "LoRA / 风格微调",
+            "Flux LoRA、SD LoRA、角色/风格 LoRA 都放在这里。",
+            "my_style_flux.safetensors、detail_sd15.safetensors",
+            new[] { "*.safetensors", "*.pt" });
+
+        AddCategory("upscale_models", "超分模型 / Upscale",
+            "4x 放大模型，供 Upscale Image (using Model) 使用。",
+            "4x-UltraSharp.pth、RealESRGAN_x4plus.pth",
+            new[] { "*.pth", "*.safetensors", "*.onnx" });
+
+        AddCategory("controlnet", "ControlNet",
+            "姿态、深度、边缘等控制模型。",
+            "control_v11p_sd15_canny.pth",
+            new[] { "*.safetensors", "*.pth", "*.ckpt" });
+
+        AddCategory("clip_vision", "CLIP Vision",
+            "IP-Adapter / 参考图工作流使用的视觉编码器。",
+            "clip_vision_g.safetensors",
+            new[] { "*.safetensors", "*.pt", "*.pth" });
+
+        AddCategory("embeddings", "Embeddings / Textual Inversion",
+            "正向/负向文本嵌入（如 easynegative）。",
+            "easynegative.safetensors",
+            new[] { "*.safetensors", "*.pt" });
     }
 
     private static string[] SafeFiles(string dir, params string[] patterns)
@@ -829,15 +955,51 @@ public sealed class MainViewModel : ObservableObject
         SaveSettingsAndLog();
     }
 
+    private static bool IsElevated()
+    {
+        if (!OperatingSystem.IsWindows()) return false;
+        try
+        {
+            using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var principal = new System.Security.Principal.WindowsPrincipal(identity);
+            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private void OpenUrl(string url)
     {
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            if (IsElevated())
+            {
+                // 以管理员运行时，直接把 URL 交给桌面 Shell，让浏览器由普通权限的 Explorer 启动，
+                // 避免 Chrome/Edge 继承管理员权限后提示“以管理员身份重启”。
+                Process.Start(new ProcessStartInfo("explorer.exe", url) { UseShellExecute = true });
+            }
+            else
+            {
+                // 默认浏览器 + 链接方式；不指定浏览器可执行文件，避免权限/重启警告。
+                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true, Verb = "open" });
+            }
         }
         catch (Exception ex)
         {
-            AppendLog(new LogLine(LogKind.Err, "打开浏览器失败: " + ex.Message));
+            try
+            {
+                Process.Start(new ProcessStartInfo("rundll32.exe", "url.dll,FileProtocolHandler " + url)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+            }
+            catch
+            {
+                AppendLog(new LogLine(LogKind.Err, "打开浏览器失败: " + ex.Message));
+            }
         }
     }
 
@@ -846,11 +1008,21 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             Directory.CreateDirectory(path);
-            Process.Start(new ProcessStartInfo("explorer.exe", ProcessUtil.Quote(path)) { UseShellExecute = true });
+            // 交给 Windows Shell 打开目录，避免直接启动 explorer.exe 时在部分环境出现 0xc0000142。
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true, Verb = "open" });
         }
         catch (Exception ex)
         {
-            AppendLog(new LogLine(LogKind.Err, "打开目录失败: " + ex.Message));
+            try
+            {
+                var fallback = new ProcessStartInfo { FileName = "explorer.exe", UseShellExecute = true };
+                fallback.ArgumentList.Add(path);
+                Process.Start(fallback);
+            }
+            catch
+            {
+                AppendLog(new LogLine(LogKind.Err, "打开目录失败: " + ex.Message));
+            }
         }
     }
 

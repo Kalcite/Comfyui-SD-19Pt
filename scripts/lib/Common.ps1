@@ -1,4 +1,4 @@
-# Shared helpers for the ComfyUI deployment scripts (Windows PowerShell 5.1+).
+﻿# Shared helpers for the ComfyUI deployment scripts (Windows PowerShell 5.1+).
 $ErrorActionPreference = 'Stop'
 
 function Resolve-Root {

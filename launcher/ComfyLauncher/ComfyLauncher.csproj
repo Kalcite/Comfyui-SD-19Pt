@@ -10,6 +10,7 @@
     <AssemblyName>ComfyLauncher</AssemblyName>
     <RootNamespace>ComfyLauncher</RootNamespace>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyTitle>ComfyUI SD Launcher</AssemblyTitle>
     <Product>ComfyUI SD Launcher</Product>
     <Description>ComfyUI + Stable Diffusion 超分辨率启动器</Description>

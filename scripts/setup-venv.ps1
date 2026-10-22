@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Root = '',
     [string]$VenvPath = '',
     [switch]$Force

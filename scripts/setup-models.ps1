@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Root = '',
     [string]$ModelsDir = '',
     [string]$Proxy = '',

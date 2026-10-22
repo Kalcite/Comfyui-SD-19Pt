@@ -1,11 +1,14 @@
-param(
+﻿param(
     [string]$Root = '',
     [string]$VenvPath = '',
-    [string]$TorchIndex = 'https://download.pytorch.org/whl/cu130',
+    [ValidateSet('CUDA', 'DirectML', 'CPU')]
+    [string]$Backend = 'CUDA',
+    [string]$CudaVersion = '13.0',
+    [string]$TorchIndex = '',
     [string]$PipIndex = '',
-    [string]$TorchVersion = '2.9.1',
-    [string]$TorchvisionVersion = '0.24.1',
-    [string]$TorchaudioVersion = '2.9.1',
+    [string]$TorchVersion = '',
+    [string]$TorchvisionVersion = '',
+    [string]$TorchaudioVersion = '',
     [string]$Proxy = '',
     [switch]$SkipTorch
 )
@@ -32,29 +35,72 @@ if ([string]::IsNullOrWhiteSpace($extraIndex)) {
 }
 
 if (-not $SkipTorch) {
-    Write-Step "Installing PyTorch (CUDA build)"
-    $pipArgs = @(
-        '-u', '-m', 'pip', 'install',
-        ("torch==" + $TorchVersion),
-        ("torchvision==" + $TorchvisionVersion),
-        ("torchaudio==" + $TorchaudioVersion),
-        '--index-url', $TorchIndex,
-        '--extra-index-url', $extraIndex,
-        '--progress-bar', 'off',
-        '--retries', '5',
-        '--timeout', '120',
-        '--disable-pip-version-check'
-    )
-    if (-not [string]::IsNullOrWhiteSpace($Proxy)) { $pipArgs += @('--proxy', $Proxy) }
+    if ($Backend -eq 'DirectML') {
+        Write-Step "Installing torch-directml (DirectML backend)"
+        $dmlArgs = @('-u', '-m', 'pip', 'install', 'torch-directml',
+                     '--index-url', $extraIndex,
+                     '--extra-index-url', 'https://mirrors.aliyun.com/pypi/simple/',
+                     '--progress-bar', 'off', '--retries', '5', '--timeout', '120',
+                     '--disable-pip-version-check')
+        if (-not [string]::IsNullOrWhiteSpace($Proxy)) { $dmlArgs += @('--proxy', $Proxy) }
+        & $venvPython @dmlArgs
+        if ($LASTEXITCODE -ne 0) { throw "torch-directml installation failed." }
 
-    & $venvPython @pipArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw "PyTorch installation failed. Check the network or change the PyTorch index in Settings."
+        Write-Step "Verifying DirectML"
+        & $venvPython -c "import torch, torch_directml; print('torch', torch.__version__); print('directml', torch_directml.is_available()); print(torch_directml.device_name(0) if torch_directml.is_available() else 'CPU only')"
+        if ($LASTEXITCODE -ne 0) { throw "torch-directml import failed." }
+    } else {
+        if ($Backend -eq 'CPU') {
+            $resolvedIndex = 'https://download.pytorch.org/whl/cpu'
+            $label = 'CPU'
+        } else {
+            $cudaTag = 'cu' + ($CudaVersion -replace '\.', '')
+            $resolvedIndex = if ([string]::IsNullOrWhiteSpace($TorchIndex)) {
+                "https://download.pytorch.org/whl/$cudaTag"
+            } else {
+                $TorchIndex
+            }
+            $label = "CUDA $CudaVersion"
+        }
+
+        if ([string]::IsNullOrWhiteSpace($TorchVersion)) {
+            if ($Backend -eq 'CUDA' -and $CudaVersion -eq '12.4') {
+                $TorchVersion = '2.6.0'
+                $TorchvisionVersion = '0.21.0'
+                $TorchaudioVersion = '2.6.0'
+            } else {
+                $TorchVersion = '2.9.1'
+                $TorchvisionVersion = '0.24.1'
+                $TorchaudioVersion = '2.9.1'
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($TorchvisionVersion)) { $TorchvisionVersion = '0.24.1' }
+        if ([string]::IsNullOrWhiteSpace($TorchaudioVersion)) { $TorchaudioVersion = '2.9.1' }
+
+        Write-Step "Installing PyTorch ($label, torch $TorchVersion)"
+        $pipArgs = @(
+            '-u', '-m', 'pip', 'install',
+            ("torch==" + $TorchVersion),
+            ("torchvision==" + $TorchvisionVersion),
+            ("torchaudio==" + $TorchaudioVersion),
+            '--index-url', $resolvedIndex,
+            '--extra-index-url', $extraIndex,
+            '--progress-bar', 'off',
+            '--retries', '5',
+            '--timeout', '120',
+            '--disable-pip-version-check'
+        )
+        if (-not [string]::IsNullOrWhiteSpace($Proxy)) { $pipArgs += @('--proxy', $Proxy) }
+
+        & $venvPython @pipArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "PyTorch installation failed ($label). Check the network or choose another CUDA/torch profile."
+        }
+
+        Write-Step "Verifying PyTorch / $label"
+        & $venvPython -c "import torch; print('torch', torch.__version__); print('cuda', torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU only')"
+        if ($LASTEXITCODE -ne 0) { throw "PyTorch import failed." }
     }
-
-    Write-Step "Verifying CUDA availability"
-    & $venvPython -c "import torch; print('torch', torch.__version__); print('cuda', torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU only')"
-    if ($LASTEXITCODE -ne 0) { throw "PyTorch import failed." }
 } else {
     Write-Host "Skipping PyTorch installation (-SkipTorch)."
 }

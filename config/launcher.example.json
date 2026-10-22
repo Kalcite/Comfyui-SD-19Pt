@@ -31,5 +31,8 @@
   "PipIndex": "",
   "HfMirror": "",
   "KeepConsoleOnRestart": true,
-  "Theme": "Dark"
+  "Theme": "Dark",
+  "TorchProfile": "CUDA 13.0 + torch 2.9.1",
+  "ComfyVersion": "",
+  "DownloadModelsAfterSetup": false
 }

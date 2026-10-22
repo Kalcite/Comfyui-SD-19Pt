@@ -79,6 +79,10 @@ public static class CommandBuilder
 
         if (settings.DisableSmartMemory) Flag("--disable-smart-memory");
 
+        var torchProfile = settings.TorchProfile ?? "";
+        if (torchProfile.Contains("DirectML", StringComparison.OrdinalIgnoreCase)) Flag("--directml");
+        else if (torchProfile.StartsWith("CPU", StringComparison.OrdinalIgnoreCase)) Flag("--cpu");
+
         var verbose = settings.VerboseLevel ?? "";
         if (verbose.StartsWith("调试"))
         {

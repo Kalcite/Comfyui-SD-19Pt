@@ -146,7 +146,10 @@
               <Border Classes="card">
                 <StackPanel Spacing="8">
                   <TextBlock Classes="h2" Text="启动行为" />
-                  <CheckBox Content="服务就绪后自动打开浏览器" IsChecked="{Binding Settings.AutoOpenBrowser}" />
+                  <CheckBox Content="服务就绪后自动打开 WebUI（链接方式，默认浏览器）"
+                            IsChecked="{Binding Settings.AutoOpenBrowser}" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap"
+                             Text="使用系统默认浏览器打开 http://127.0.0.1:端口/；以 asInvoker 运行，不请求管理员权限，避免浏览器出现“权限/重启”提示。" />
                   <CheckBox Content="进程意外退出时自动重启（3 秒后）" IsChecked="{Binding Settings.AutoRestart}" />
                   <CheckBox Content="重启时保留控制台内容" IsChecked="{Binding Settings.KeepConsoleOnRestart}" />
                   <TextBlock Classes="muted" TextWrapping="Wrap"
@@ -256,6 +259,25 @@
 
             <Border Classes="card">
               <StackPanel Spacing="10">
+                <TextBlock Classes="h2" Text="推理后端 / CUDA 组合" />
+                <Grid ColumnDefinitions="170,*">
+                  <TextBlock Classes="label" Text="Torch 组合" />
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding TorchProfiles}" SelectedItem="{Binding Settings.TorchProfile}" />
+                </Grid>
+                <Grid ColumnDefinitions="170,*">
+                  <TextBlock Classes="label" Text="ComfyUI 版本" />
+                  <TextBox Grid.Column="1" Text="{Binding Settings.ComfyVersion}"
+                           Watermark="留空 = 最新；可填 v0.42.0、分支名或 commit" />
+                </Grid>
+                <CheckBox Content="构建时下载推荐模型（可选：SD1.5 + 两个超分模型）"
+                          IsChecked="{Binding Settings.DownloadModelsAfterSetup}" />
+                <TextBlock Classes="muted" TextWrapping="Wrap"
+                           Text="CUDA 组合会安装对应 cu124/cu126/cu128/cu130 的 PyTorch；DirectML 安装 torch-directml 并在启动时加 --directml；CPU 组合安装 CPU 版并加 --cpu。模型下载默认关闭，可稍后在“模型”页单独执行。" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="10">
                 <TextBlock Classes="h2" Text="分步构建" />
                 <WrapPanel ItemWidth="260" Orientation="Horizontal">
                   <StackPanel Margin="0,0,10,10">
@@ -271,12 +293,12 @@
                     <TextBlock Classes="muted" Text="基于内置 Python 3.12.10 创建 .venv" />
                   </StackPanel>
                   <StackPanel Margin="0,0,10,10">
-                    <Button Content="4. 安装 PyTorch + 依赖" Command="{Binding InstallTorchCommand}" Classes="ghost" />
-                    <TextBlock Classes="muted" Text="CUDA 版 PyTorch 与 ComfyUI requirements" />
+                    <Button Content="4. 安装所选后端 PyTorch + 依赖" Command="{Binding InstallTorchCommand}" Classes="ghost" />
+                    <TextBlock Classes="muted" Text="按上方 CUDA/DirectML/CPU 组合安装" />
                   </StackPanel>
                   <StackPanel Margin="0,0,10,10">
-                    <Button Content="5. 下载模型" Command="{Binding DownloadModelsCommand}" Classes="ghost" />
-                    <TextBlock Classes="muted" Text="SD1.5 + 4x-UltraSharp + RealESRGAN" />
+                    <Button Content="5. 下载模型（可选）" Command="{Binding DownloadModelsCommand}" Classes="ghost" />
+                    <TextBlock Classes="muted" Text="SD1.5 + 4x-UltraSharp + RealESRGAN；Flux 按模型页说明放置" />
                   </StackPanel>
                   <StackPanel Margin="0,0,10,10">
                     <Button Content="6. 重新检查环境" Command="{Binding CheckEnvironmentCommand}" Classes="ghost" />
@@ -284,7 +306,7 @@
                   </StackPanel>
                 </WrapPanel>
                 <TextBlock Classes="muted" TextWrapping="Wrap"
-                           Text="所有步骤与 scripts\*.ps1 等价，可脱离启动器在终端执行；安装 PyTorch 需要数 GB 下载，请保持网络畅通。" />
+                           Text="所有步骤与 scripts\*.ps1 等价，可脱离启动器在终端执行；PyTorch 选择不同后端/CUDA 组合会下载不同体积的包；模型下载默认关闭。" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -298,44 +320,78 @@
             <Border Classes="card">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel>
-                  <TextBlock Classes="h2" Text="模型库" />
+                  <TextBlock Classes="h2" Text="模型管理" />
                   <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding ModelsPathResolved}" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap"
+                             Text="按 ComfyUI 目录分别解析：Checkpoint、扩散模型、文本编码器、VAE、LoRA、超分、ControlNet 等。" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                   <Button Content="刷新" Command="{Binding RefreshModelsCommand}" Classes="ghost" />
-                  <Button Content="下载全部推荐模型" Command="{Binding DownloadModelsCommand}" Classes="primary" />
-                  <Button Content="打开模型目录" Command="{Binding OpenModelsCommand}" Classes="ghost" />
+                  <Button Content="下载 SD1.5 + 超分（可选）" Command="{Binding DownloadModelsCommand}" Classes="primary" />
+                  <Button Content="打开模型根目录" Command="{Binding OpenModelsCommand}" Classes="ghost" />
                 </StackPanel>
               </Grid>
             </Border>
 
+            <ItemsControl ItemsSource="{Binding ModelCategories}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="card" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Spacing="3">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" />
+                          <TextBlock Text="{Binding CountText}" Classes="muted" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Path}" Classes="muted" FontSize="11"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{DynamicResource TextLabel}" />
+                        <TextBlock Text="{Binding SampleText}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding FilesPreview}" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource AccentStrong}" />
+                      </StackPanel>
+                      <Button Grid.Column="1" Content="打开目录" Command="{Binding OpenCommand}"
+                              Classes="ghost" VerticalAlignment="Top" Margin="12,0,0,0" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
             <Border Classes="card">
               <StackPanel Spacing="6">
-                <Grid ColumnDefinitions="*,120,110">
+                <TextBlock Classes="h2" Text="Flux / 分离式模型样例" />
+                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextLabel}"
+                           Text="Flux.1-dev 使用分离式文件，按以下目录放置后重启 ComfyUI：" />
+                <TextBlock FontFamily="Consolas" FontSize="12" Foreground="{DynamicResource AccentStrong}"
+                           Text="models\diffusion_models\flux1-dev.safetensors&#10;models\text_encoders\clip_l.safetensors&#10;models\text_encoders\t5xxl_fp16.safetensors&#10;models\vae\ae.safetensors&#10;models\loras\flux_style.safetensors" />
+                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextLabel}"
+                           Text="SD1.5：models\checkpoints\v1-5-pruned-emaonly.safetensors；超分：models\upscale_models\4x-UltraSharp.pth。旧版 ComfyUI 的 models\unet、models\clip 也会被识别。" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="h2" Text="已发现文件" />
+                <Grid ColumnDefinitions="*,150,110">
                   <TextBlock Classes="muted" Text="文件" />
-                  <TextBlock Grid.Column="1" Classes="muted" Text="类型" />
+                  <TextBlock Grid.Column="1" Classes="muted" Text="分类" />
                   <TextBlock Grid.Column="2" Classes="muted" Text="大小" HorizontalAlignment="Right" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding Models}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Grid ColumnDefinitions="*,120,110" Margin="0,4">
+                      <Grid ColumnDefinitions="*,150,110" Margin="0,3">
                         <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding Type}" FontSize="12" Foreground="{DynamicResource AccentStrong}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Type}" FontSize="11"
+                                   Foreground="{DynamicResource AccentStrong}" TextTrimming="CharacterEllipsis" />
                         <TextBlock Grid.Column="2" Text="{Binding SizeText}" FontSize="12"
                                    HorizontalAlignment="Right" Foreground="{DynamicResource TextLabel}" />
                       </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-              </StackPanel>
-            </Border>
-
-            <Border Classes="card">
-              <StackPanel Spacing="6">
-                <TextBlock Classes="h2" Text="推荐组合" />
-                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextLabel}"
-                           Text="生图：v1-5-pruned-emaonly.safetensors（512×512，约 4.2 GB）。超分：4x-UltraSharp.pth（通用照片）与 RealESRGAN_x4plus.pth（写实/通用）各约 65 MB。超分工作流位于 workflows\upscale_4x.json。" />
               </StackPanel>
             </Border>
           </StackPanel>
@@ -383,10 +439,6 @@
             <Border Classes="card">
               <StackPanel Spacing="8">
                 <TextBlock Classes="h2" Text="包与模型源" />
-                <Grid ColumnDefinitions="170,*">
-                  <TextBlock Classes="label" Text="PyTorch 索引" />
-                  <TextBox Grid.Column="1" Text="{Binding Settings.TorchIndex}" />
-                </Grid>
                 <Grid ColumnDefinitions="170,*">
                   <TextBlock Classes="label" Text="额外 pip 索引" />
                   <TextBox Grid.Column="1" Text="{Binding Settings.PipIndex}" Watermark="留空 = 使用 pip 默认/镜像配置" />

@@ -40,6 +40,9 @@ public sealed class AppSettings : INotifyPropertyChanged
     private string _hfMirror = "";
     private bool _keepConsoleOnRestart = true;
     private string _theme = "Dark";
+    private string _torchProfile = "CUDA 13.0 + torch 2.9.1";
+    private string _comfyVersion = "";
+    private bool _downloadModelsAfterSetup;
 
     public string ComfyPath { get => _comfyPath; set => Set(ref _comfyPath, value); }
     public string PythonPath { get => _pythonPath; set => Set(ref _pythonPath, value); }
@@ -73,6 +76,9 @@ public sealed class AppSettings : INotifyPropertyChanged
     public string HfMirror { get => _hfMirror; set => Set(ref _hfMirror, value); }
     public bool KeepConsoleOnRestart { get => _keepConsoleOnRestart; set => Set(ref _keepConsoleOnRestart, value); }
     public string Theme { get => _theme; set => Set(ref _theme, value); }
+    public string TorchProfile { get => _torchProfile; set => Set(ref _torchProfile, value); }
+    public string ComfyVersion { get => _comfyVersion; set => Set(ref _comfyVersion, value); }
+    public bool DownloadModelsAfterSetup { get => _downloadModelsAfterSetup; set => Set(ref _downloadModelsAfterSetup, value); }
 
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 

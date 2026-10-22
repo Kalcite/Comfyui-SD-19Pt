@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Root = '',
     [int]$Port = 8188,
     [string]$Listen = '127.0.0.1',
