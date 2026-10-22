@@ -424,9 +424,10 @@ git ls-files | Select-String -Pattern 'launcher\.json|\.pfx|\.env|token|secret'
 
 ## 12. 维护与推送
 
-本地仓库已提交，远端为：
+本地仓库已初始化并提交（仅项目文件），远端已配置：
 
 ```powershell
+git log --oneline -3
 git remote -v
 # origin  https://github.com/Kalcite/Comfyui-SD-19Pt.git
 
@@ -439,6 +440,14 @@ git push -u origin main
 ```powershell
 dotnet build .\launcher\ComfyLauncher\ComfyLauncher.csproj -c Debug
 powershell -ExecutionPolicy Bypass -File .\scripts\publish-launcher.ps1
+```
+
+如果后续修改了项目文件：
+
+```powershell
+git add -A
+git commit -m "docs: update deployment notes"
+git push
 ```
 
 ---
