@@ -20,31 +20,9 @@
 
 ---
 
-## 1. 仓库内容 vs 本机部署环境
+## 1. 仓库内容  本机部署环境
 
-这是本项目最重要的一条边界：**仓库只提交项目文件，不提交本机运行数据/模型/密钥**。
-
-| 提交到仓库 | 说明 |
-| --- | --- |
-| `launcher/ComfyLauncher/` | Avalonia 启动器源码、图标、csproj |
-| `scripts/` | Python/ComfyUI/依赖/模型/启动脚本 |
-| `workflows/` | 界面版与 API 版工作流 JSON |
-| `docs/` | README 截图与 logo |
-| `ICO/` | 原始 ComfyUI 图标与 SVG 源文件 |
-| `config/launcher.example.json` | 配置模板（路径留空） |
-| `requirements.lock.txt` | 当前验证过的依赖精确版本 |
-| `run-launcher.bat`、`README.md`、`.gitignore` | 入口与文档 |
-
-| 不提交（本机部署环境） | 原因 |
-| --- | --- |
-| `runtime/` | 内置 Python 3.12.10，约 86 MB，可由脚本重建 |
-| `.venv/` | 依赖环境，约 4 GB，可由脚本重建 |
-| `ComfyUI/` | 上游源码，由 `setup-comfy.ps1` 克隆 |
-| `ComfyUI/models/`、根目录 `models/` | 模型体积大且受各自许可证约束，由 `setup-models.ps1` 下载 |
-| `cache/`、`temp/`、`logs/` | 本机缓存与日志，可能含绝对路径 |
-| `output/`、`input/`、`user/` | 用户图片/工作流/界面设置 |
-| `config/launcher.json` | 含本机绝对路径，不提交 |
-| `launcher/**/bin|obj|publish/` | 构建产物 |
+**项目文件，无环境内容**。
 
 > 仓库 clone 下来后是“项目骨架”，执行一次部署脚本即可生成完整的本机环境；也可以由内部部署系统预置 `runtime`、`.venv`、`ComfyUI`、模型，只更新项目文件。
 
