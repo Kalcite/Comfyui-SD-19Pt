@@ -46,6 +46,7 @@ Comfyui-SD-19Pt/
 │  ├─ launch-ui.ps1               # 通过 dotnet 主机隐藏启动 DLL
 │  ├─ create-shortcut.ps1         # 生成带图标的本地快捷方式
 │  ├─ sign-launcher.ps1           # 用受信任证书做 Authenticode 签名
+│  ├─ create-local-signing-cert.ps1 # 创建/信任本地 CN=@1999Pt 证书
 │  ├─ unblock-launcher.ps1        # 解除下载文件锁定
 │  ├─ batch_upscale.py            # ComfyUI HTTP API 批量超分
 │  └─ lib/                        # Common.ps1 / download.py / filter_requirements.py
@@ -86,12 +87,7 @@ dotnet build .\launcher\ComfyLauncher\ComfyLauncher.csproj -c Debug
 powershell -ExecutionPolicy Bypass -File .\scripts\publish-launcher.ps1
 ```
 
-发布产物在 `launcher\publish\`。`run-launcher.bat` 查找顺序：
-
-1. `launcher\ComfyLauncher\bin\Release\net8.0\ComfyLauncher.exe`
-2. `launcher\publish\ComfyLauncher.exe`
-3. `bin\Debug\net8.0\...`
-4. `dotnet run`
+发布产物在 `launcher\publish\`。`run-launcher.bat` 优先通过 `scripts\launch-ui.ps1` 加载 `ComfyLauncher.dll`，找不到 DLL 时才回退 EXE，最后才 `dotnet run`。
 
 ### 3.3 版本与图标
 
@@ -102,27 +98,28 @@ powershell -ExecutionPolicy Bypass -File .\scripts\publish-launcher.ps1
 <Company>@1999Pt</Company>
 <Authors>@1999Pt</Authors>
 <Copyright>Copyright © 2026 @1999Pt</Copyright>
-<FileVersion>1.0.0.0</FileVersion>
+<FileVersion>1.1.1.0</FileVersion>
 ```
 
 - `Assets/app.ico` 是深色圆角底 + 黄色 Logomark 的多尺寸 ICO；
 - `Assets/logomark-yellow.ico` / `logomark-ink.ico` 是透明 Logomark，运行时按主题切换 `Window.Icon`；
 - 图标由 `ICO/Logomark *.svg` 渲染，避免白底/白边。
 
-### 3.4 SmartScreen
+### 3.4 签名与启动性能
 
-`app.manifest` 声明 `requestedExecutionLevel level="asInvoker"`，启动器不会请求管理员权限；自动打开 WebUI 时使用系统默认浏览器的链接方式，管理员身份下则交给 Explorer 打开，避免浏览器继承管理员权限后提示“以管理员身份重启”。
+根因：未签名的自定义 apphost 会被 Windows 安全组件检查，实测直接双击约 33 秒才出窗口；用本地证书签名后约 1.7 秒。`app.manifest` 声明 `requestedExecutionLevel level="asInvoker"`，启动器不会请求管理员权限。
 
-`run-launcher.bat` 优先执行：
+本机使用当前用户 `CN=@1999Pt` 代码签名证书，已导入 `CurrentUser\Root` 与 `TrustedPublisher`，`Get-AuthenticodeSignature` 为 `Valid`。发布脚本 `publish-launcher.ps1` 检测到该证书后会自动调用：
 
 ```text
-powershell -File scripts\launch-ui.ps1 -Dll launcher\publish\ComfyLauncher.dll
-  → Start-Process dotnet.exe ComfyLauncher.dll -WindowStyle Hidden
+C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe sign /fd SHA256 /sha1 <thumbprint> ComfyLauncher.exe
 ```
 
-`dotnet.exe` 由 Microsoft 签名，可绕开未签名自定义 EXE 的 SmartScreen/Smart App Control 拦截；直接运行 EXE 时批处理会先尝试 `Unblock-File`。
+没有证书时可运行 `create-local-signing-cert.ps1 -InstallTrust` 创建并信任本地证书；该证书**只在本机有效**，其他电脑需要导入公钥证书或使用正式 CA 证书。私钥 `.pfx` 和密码不进入仓库。
 
-文件属性会显示 Company/Copyright，但“未知发布者”弹窗只有在使用受信任证书做 Authenticode 签名后才会消失。私钥 `.pfx` 不入库；签名命令示例：
+`run-launcher.bat` 仍保留 `dotnet ComfyLauncher.dll` 启动路径（`launch-ui.ps1`），作为未签名/证书未导入环境的兜底。
+
+文件属性会显示 Company/Copyright；Authenticode 签名后 Windows 才能验证发布者。私钥 `.pfx` 不入库；签名命令示例：
 
 ```powershell
 signtool sign /fd SHA256 /f <cert.pfx> /p <password> `

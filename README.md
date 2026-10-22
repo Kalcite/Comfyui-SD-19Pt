@@ -22,7 +22,7 @@
 | PyTorch | 2.9.1 + CUDA 13.0（RTX 4060 Laptop 实测） |
 | 前端 | comfyui-frontend-package 1.57.1 |
 | 模板 | comfyui-workflow-templates 0.11.93 |
-| 启动器 | .NET 8 + Avalonia 11.3.22，v1.1.0.0 |
+| 启动器 | .NET 8 + Avalonia 11.3.22，v1.1.1.0（本地代码签名） |
 
 已验证：512×512 SD1.5 生图约 7 秒；4x-UltraSharp 将 512 放大到 2048；启动器启停正常。
 
@@ -37,7 +37,7 @@
 
 如果环境不完整，进入 **环境** 页，选择 CUDA/后端组合后点 **一键构建**。模型下载默认关闭，可在“模型”页单独执行。
 
-> `run-launcher.bat` 会优先通过 `dotnet ComfyLauncher.dll` 启动，避免直接运行未签名 EXE 被 SmartScreen/Smart App Control 拦截。若你直接双击 `launcher\publish\ComfyLauncher.exe` 出现“无法验证发布者”或长时间无响应，请改用 `run-launcher.bat`；也可以运行 `scripts\create-shortcut.ps1` 生成带图标的“ComfyUI 启动器”快捷方式。需要正式分发时请给 EXE 做代码签名。
+> 本机发布 EXE 已用 `CN=@1999Pt` 本地代码签名证书签名（签名状态 Valid），直接双击即可快速启动。若把 EXE 复制到未导入该证书的电脑，可能重新出现 SmartScreen 提示；此时使用 `run-launcher.bat`，或导入公钥证书/使用正式代码签名证书。`scripts\sign-launcher.ps1` 可重新签名。
 
 命令行方式：
 
@@ -211,7 +211,7 @@ Flux 模型体积大且受 HuggingFace 许可约束，请自行从官方仓库�
 本版本优先复用现有资源管理器的 Shell COM（`Shell.Application.Explore`，带超时），失败后用 `cmd start` 交给 Shell，不再直接启动 `explorer.exe`；若仍失败，请确认系统资源管理器可用。
 
 **双击 EXE 长时间无响应 / 提示无法验证发布者？**
-这是未签名 EXE 被 Windows SmartScreen/Smart App Control 检查导致的。请双击 `run-launcher.bat`（通过微软签名的 dotnet 主机加载 DLL），或运行 `scripts\unblock-launcher.ps1` 解除下载锁定；正式分发需要受信任的代码签名证书，可参考 `scripts\sign-launcher.ps1`。
+根因是未签名 apphost 被 Windows 安全组件检查。本机已用 `CN=@1999Pt` 本地证书签名（Valid），直接双击约 1~2 秒启动；如果换电脑或发布包未签名，请双击 `run-launcher.bat`，或运行 `scripts\create-local-signing-cert.ps1 -InstallTrust` 后重新发布。正式分发应使用受信任 CA 证书。
 
 **端口被占用？**
 修改监听端口，或结束占用进程：`Get-NetTCPConnection -LocalPort 8188`。

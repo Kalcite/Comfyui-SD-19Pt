@@ -1,5 +1,18 @@
 # 更新日志
 
+## v1.1.1 — 2026-10-23
+
+### 修复
+
+- **启动慢/无法验证发布者**：根因是未签名 apphost 被 Windows 安全组件检查。使用 Windows SDK 的 `signtool.exe` 和本地 `CN=@1999Pt` 代码签名证书后，签名状态为 Valid，直接双击 EXE 从约 33 秒降到约 1.7 秒。
+- **发布流程自动签名**：`scripts/publish-launcher.ps1` 检测到 `CN=@1999Pt` 证书后自动调用 signtool；新增 `scripts/create-local-signing-cert.ps1`（可选安装到当前用户信任存储）。
+- **打开目录**：Shell COM 增加 1.5 秒超时，失败后改用 `cmd /c start`，避免阻塞 UI 和直接启动 explorer.exe。
+
+### 说明
+
+- 本地自签名证书只安装在当前用户的 `Root` / `TrustedPublisher`，**仅本机信任**；其他电脑需要导入该证书或使用正式 CA 证书。
+- 证书私钥保留在当前用户证书存储中，不进入仓库。
+
 ## v1.1.0 — 2026-10-23
 
 ### 新增
