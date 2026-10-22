@@ -1,0 +1,532 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="using:ComfyLauncher.Infrastructure"
+        x:Class="ComfyLauncher.Views.MainWindow"
+        Title="ComfyUI 启动器 · Stable Diffusion 超分工作台"
+        Width="1120" Height="600" MinWidth="1080" MinHeight="540"
+        Background="{DynamicResource AppBackground}" FontFamily="Microsoft YaHei UI"
+        WindowStartupLocation="CenterScreen">
+  <Window.Resources>
+    <conv:StatusStateToBrushConverter x:Key="StatusBrush" />
+  </Window.Resources>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.h2">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="TextBlock.label">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource TextLabel}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{DynamicResource PrimaryButton}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="{DynamicResource DangerButton}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="{DynamicResource GhostBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource GhostForeground}" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*,4,170,Auto">
+    <!-- 顶部标题栏 -->
+    <Border x:Name="HeaderBar" Grid.Row="0" Background="{DynamicResource HeaderBackground}" Padding="18,12" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Panel Width="38" Height="38" VerticalAlignment="Center">
+            <Image Source="/Assets/logomark-yellow.ico" Stretch="Uniform" IsVisible="{Binding IsDarkTheme}" />
+            <Image Source="/Assets/logomark-ink.ico" Stretch="Uniform" IsVisible="{Binding IsLightTheme}" />
+          </Panel>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="ComfyUI 启动器" FontSize="17" FontWeight="SemiBold" />
+            <TextBlock Classes="muted" Text="Stable Diffusion · 图片超分 · 环境构建 · 内嵌控制台" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" />
+          <TextBlock Text="{Binding UptimeText}" Classes="muted" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding BusyText}" Foreground="{DynamicResource AccentStrong}" FontSize="12" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <Button Content="启动" Command="{Binding LaunchCommand}" Classes="primary" Padding="18,7" />
+          <Button Content="停止" Command="{Binding StopCommand}" Classes="danger" Padding="14,7" />
+          <Button Content="重启" Command="{Binding RestartCommand}" Classes="ghost" Padding="14,7" />
+          <Button Content="打开 WebUI" Command="{Binding OpenWebCommand}" Classes="ghost" Padding="14,7" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- 主选项卡 -->
+    <TabControl x:Name="MainTabs" Grid.Row="1" Margin="14,10,14,0" Padding="0" MaxHeight="560" ClipToBounds="True">
+      <!-- ================= 启动 ================= -->
+      <TabItem Header="启动">
+        <ScrollViewer x:Name="LaunchScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxWidth="1060">
+          <Grid Width="1050" ColumnDefinitions="*,430" ColumnSpacing="14" Margin="2,10,2,10">
+            <StackPanel Grid.Column="0" Spacing="12">
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <TextBlock Classes="h2" Text="目录与用户配置" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap"
+                             Text="用户目录保存工作流与界面设置（--user-directory）；输出、输入目录可分别覆盖；路径留空即使用项目默认值。" />
+                  <StackPanel Spacing="7">
+                    <Grid ColumnDefinitions="130,*,Auto">
+                      <TextBlock Classes="label" Text="ComfyUI 目录" />
+                      <TextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding Settings.ComfyPath}" />
+                      <Button Grid.Column="2" Content="浏览" Command="{Binding BrowseComfyCommand}" Classes="ghost" />
+                    </Grid>
+                    <Grid ColumnDefinitions="130,*,Auto">
+                      <TextBlock Classes="label" Text="内置 Python" />
+                      <TextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding Settings.PythonPath}" />
+                      <Button Grid.Column="2" Content="浏览" Command="{Binding BrowsePythonCommand}" Classes="ghost" />
+                    </Grid>
+                    <Grid ColumnDefinitions="130,*,Auto">
+                      <TextBlock Classes="label" Text="虚拟环境" />
+                      <TextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding Settings.VenvPath}" />
+                      <Button Grid.Column="2" Content="浏览" Command="{Binding BrowseVenvCommand}" Classes="ghost" />
+                    </Grid>
+                    <Grid ColumnDefinitions="130,*,Auto">
+                      <TextBlock Classes="label" Text="用户目录" />
+                      <TextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding Settings.UserDirectory}" />
+                      <Button Grid.Column="2" Content="浏览" Command="{Binding BrowseUserCommand}" Classes="ghost" />
+                    </Grid>
+                    <Grid ColumnDefinitions="130,*,Auto">
+                      <TextBlock Classes="label" Text="模型目录" />
+                      <TextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding Settings.ModelsDirectory}"
+                               Watermark="留空 = ComfyUI\models" />
+                      <Button Grid.Column="2" Content="浏览" Command="{Binding BrowseModelsCommand}" Classes="ghost" />
+                    </Grid>
+                    <Grid ColumnDefinitions="130,*,Auto">
+                      <TextBlock Classes="label" Text="输出目录" />
+                      <TextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding Settings.OutputDirectory}" />
+                      <Button Grid.Column="2" Content="浏览" Command="{Binding BrowseOutputCommand}" Classes="ghost" />
+                    </Grid>
+                    <Grid ColumnDefinitions="130,*,Auto">
+                      <TextBlock Classes="label" Text="输入目录" />
+                      <TextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding Settings.InputDirectory}" />
+                      <Button Grid.Column="2" Content="浏览" Command="{Binding BrowseInputCommand}" Classes="ghost" />
+                    </Grid>
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                    <Button Content="恢复默认路径" Command="{Binding ResetPathsCommand}" Classes="ghost" />
+                    <Button Content="打开用户目录" Command="{Binding OpenUserCommand}" Classes="ghost" />
+                    <Button Content="打开输出目录" Command="{Binding OpenOutputCommand}" Classes="ghost" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <TextBlock Classes="h2" Text="启动行为" />
+                  <CheckBox Content="服务就绪后自动打开浏览器" IsChecked="{Binding Settings.AutoOpenBrowser}" />
+                  <CheckBox Content="进程意外退出时自动重启（3 秒后）" IsChecked="{Binding Settings.AutoRestart}" />
+                  <CheckBox Content="重启时保留控制台内容" IsChecked="{Binding Settings.KeepConsoleOnRestart}" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap"
+                             Text="提示：ComfyUI 首次启动会加载模型与节点，可能需要 30 秒以上；控制台会显示完整日志。" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Spacing="12">
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <TextBlock Classes="h2" Text="运行参数（调试）" />
+                  <Grid ColumnDefinitions="130,*" RowDefinitions="Auto" Margin="0,0,0,4">
+                    <TextBlock Classes="label" Text="监听端口" />
+                    <TextBox Grid.Column="1" Text="{Binding Settings.Port}" Watermark="8188" />
+                  </Grid>
+                  <Grid ColumnDefinitions="130,*">
+                    <TextBlock Classes="label" Text="监听地址" />
+                    <StackPanel Grid.Column="1" Spacing="4">
+                      <CheckBox Content="允许局域网访问 (0.0.0.0)" IsChecked="{Binding Settings.ListenAll}" />
+                      <TextBox Text="{Binding Settings.ListenAddress}" Width="180" HorizontalAlignment="Left" Watermark="127.0.0.1" />
+                    </StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="130,*">
+                    <TextBlock Classes="label" Text="显存模式" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding VramModes}" SelectedItem="{Binding Settings.VramMode}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="130,*">
+                    <TextBlock Classes="label" Text="精度" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding PrecisionModes}" SelectedItem="{Binding Settings.Precision}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="130,*">
+                    <TextBlock Classes="label" Text="实时预览" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                      <ComboBox ItemsSource="{Binding PreviewMethods}" SelectedItem="{Binding Settings.PreviewMethod}" Width="160" />
+                      <TextBox Text="{Binding Settings.PreviewSize}" Width="80" Watermark="512" />
+                      <TextBlock Classes="muted" Text="预览尺寸" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Grid>
+                  <Grid ColumnDefinitions="130,*">
+                    <TextBlock Classes="label" Text="注意力后端" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding AttentionModes}" SelectedItem="{Binding Settings.Attention}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="130,*">
+                    <TextBlock Classes="label" Text="日志级别" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding VerboseLevels}" SelectedItem="{Binding Settings.VerboseLevel}" />
+                  </Grid>
+                  <CheckBox Content="禁用智能显存管理 (--disable-smart-memory)" IsChecked="{Binding Settings.DisableSmartMemory}" />
+                  <TextBlock Classes="label" Text="额外参数" Margin="0,4,0,0" />
+                  <TextBox Text="{Binding Settings.ExtraArgs}" AcceptsReturn="True" Height="64"
+                           Watermark="例如：--reserve-vram 0.8 --disable-xformers" />
+                </StackPanel>
+              </Border>
+
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <TextBlock Classes="h2" Text="实际启动命令" />
+                  <TextBox Text="{Binding CommandPreview}" IsReadOnly="True" AcceptsReturn="True"
+                           TextWrapping="Wrap" Height="70" FontFamily="Consolas" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="复制命令" Command="{Binding CopyCommandLineCommand}" Classes="ghost" />
+                    <Button Content="保存配置" Command="{Binding SaveSettingsCommand}" Classes="ghost" />
+                    <Button Content="检查环境" Command="{Binding CheckEnvironmentCommand}" Classes="ghost" />
+                    <Button Content="打开 ComfyUI 目录" Command="{Binding OpenComfyCommand}" Classes="ghost" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </Grid>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ================= 环境 ================= -->
+      <TabItem Header="环境">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxWidth="1060">
+          <StackPanel Width="1050" Margin="2,10,2,10" Spacing="12">
+            <Border Classes="card">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                  <TextBlock Classes="h2" Text="环境状态" />
+                  <TextBlock Text="{Binding EnvSummary}" FontSize="13" Foreground="{DynamicResource TextPrimary}" />
+                  <TextBlock Classes="muted" Text="检查内置 Python、ComfyUI、虚拟环境、PyTorch/CUDA 与模型文件。" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <Button Content="重新检查" Command="{Binding CheckEnvironmentCommand}" Classes="ghost" />
+                  <Button Content="一键构建" Command="{Binding SetupAllCommand}" Classes="primary" />
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <Border Classes="card">
+              <ItemsControl ItemsSource="{Binding StatusItems}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="24,170,*" Margin="0,5">
+                      <TextBlock Text="{Binding Icon}" Foreground="{Binding State, Converter={StaticResource StatusBrush}}"
+                                 FontSize="14" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"
+                                 VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="2" Text="{Binding Detail}" TextWrapping="Wrap" FontSize="12"
+                                 Foreground="{DynamicResource TextLabel}" VerticalAlignment="Center" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="h2" Text="分步构建" />
+                <WrapPanel ItemWidth="260" Orientation="Horizontal">
+                  <StackPanel Margin="0,0,10,10">
+                    <Button Content="1. 检查/修复内置 Python" Command="{Binding SetupPythonCommand}" Classes="ghost" />
+                    <TextBlock Classes="muted" Text="验证 runtime\python312 可用并补齐 pip" />
+                  </StackPanel>
+                  <StackPanel Margin="0,0,10,10">
+                    <Button Content="2. 克隆/更新 ComfyUI" Command="{Binding CloneComfyCommand}" Classes="ghost" />
+                    <TextBlock Classes="muted" Text="Git 超过阈值无响应/低速时自动走 10108 代理" />
+                  </StackPanel>
+                  <StackPanel Margin="0,0,10,10">
+                    <Button Content="3. 创建/修复虚拟环境" Command="{Binding SetupVenvCommand}" Classes="ghost" />
+                    <TextBlock Classes="muted" Text="基于内置 Python 3.12.10 创建 .venv" />
+                  </StackPanel>
+                  <StackPanel Margin="0,0,10,10">
+                    <Button Content="4. 安装 PyTorch + 依赖" Command="{Binding InstallTorchCommand}" Classes="ghost" />
+                    <TextBlock Classes="muted" Text="CUDA 版 PyTorch 与 ComfyUI requirements" />
+                  </StackPanel>
+                  <StackPanel Margin="0,0,10,10">
+                    <Button Content="5. 下载模型" Command="{Binding DownloadModelsCommand}" Classes="ghost" />
+                    <TextBlock Classes="muted" Text="SD1.5 + 4x-UltraSharp + RealESRGAN" />
+                  </StackPanel>
+                  <StackPanel Margin="0,0,10,10">
+                    <Button Content="6. 重新检查环境" Command="{Binding CheckEnvironmentCommand}" Classes="ghost" />
+                    <TextBlock Classes="muted" Text="刷新状态与模型列表" />
+                  </StackPanel>
+                </WrapPanel>
+                <TextBlock Classes="muted" TextWrapping="Wrap"
+                           Text="所有步骤与 scripts\*.ps1 等价，可脱离启动器在终端执行；安装 PyTorch 需要数 GB 下载，请保持网络畅通。" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ================= 模型 ================= -->
+      <TabItem Header="模型">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxWidth="1060">
+          <StackPanel Width="1050" Margin="2,10,2,10" Spacing="12">
+            <Border Classes="card">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                  <TextBlock Classes="h2" Text="模型库" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding ModelsPathResolved}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                  <Button Content="刷新" Command="{Binding RefreshModelsCommand}" Classes="ghost" />
+                  <Button Content="下载全部推荐模型" Command="{Binding DownloadModelsCommand}" Classes="primary" />
+                  <Button Content="打开模型目录" Command="{Binding OpenModelsCommand}" Classes="ghost" />
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,120,110">
+                  <TextBlock Classes="muted" Text="文件" />
+                  <TextBlock Grid.Column="1" Classes="muted" Text="类型" />
+                  <TextBlock Grid.Column="2" Classes="muted" Text="大小" HorizontalAlignment="Right" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Models}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="*,120,110" Margin="0,4">
+                        <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Type}" FontSize="12" Foreground="{DynamicResource AccentStrong}" />
+                        <TextBlock Grid.Column="2" Text="{Binding SizeText}" FontSize="12"
+                                   HorizontalAlignment="Right" Foreground="{DynamicResource TextLabel}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="h2" Text="推荐组合" />
+                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextLabel}"
+                           Text="生图：v1-5-pruned-emaonly.safetensors（512×512，约 4.2 GB）。超分：4x-UltraSharp.pth（通用照片）与 RealESRGAN_x4plus.pth（写实/通用）各约 65 MB。超分工作流位于 workflows\upscale_4x.json。" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ================= 设置 ================= -->
+      <TabItem Header="设置与代理">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxWidth="1060">
+          <StackPanel Width="1050" Margin="2,10,2,10" Spacing="12">
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="界面主题" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <ToggleSwitch IsChecked="{Binding IsLightTheme}" OnContent="浅色" OffContent="深色" />
+                  <TextBlock Classes="muted" Text="切换后立即生效，并写入 config\launcher.json；窗口图标会随主题切换。"
+                             VerticalAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="Git 智能代理" />
+                <TextBlock Classes="muted" TextWrapping="Wrap"
+                           Text="直连 git 时若超过设定秒数没有任何响应，或持续低于最低速率，就自动切换到代理重试。仅在直连失败时启用代理。" />
+                <StackPanel Spacing="7" Margin="0,4,0,0">
+                  <Grid ColumnDefinitions="170,*">
+                    <TextBlock Classes="label" Text="回退代理地址" />
+                    <TextBox Grid.Column="1" Text="{Binding Settings.GitProxy}" Watermark="http://127.0.0.1:10108" />
+                  </Grid>
+                  <Grid ColumnDefinitions="170,*">
+                    <TextBlock Classes="label" Text="无响应阈值（秒）" />
+                    <TextBox Grid.Column="1" Width="120" HorizontalAlignment="Left" Text="{Binding Settings.GitTimeoutSeconds}" />
+                  </Grid>
+                  <Grid ColumnDefinitions="170,*">
+                    <TextBlock Classes="label" Text="最低速率（KB/s）" />
+                    <TextBox Grid.Column="1" Width="120" HorizontalAlignment="Left" Text="{Binding Settings.GitMinSpeedKBps}" />
+                  </Grid>
+                  <CheckBox Content="启用代理回退" IsChecked="{Binding Settings.GitUseProxyFallback}" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="包与模型源" />
+                <Grid ColumnDefinitions="170,*">
+                  <TextBlock Classes="label" Text="PyTorch 索引" />
+                  <TextBox Grid.Column="1" Text="{Binding Settings.TorchIndex}" />
+                </Grid>
+                <Grid ColumnDefinitions="170,*">
+                  <TextBlock Classes="label" Text="额外 pip 索引" />
+                  <TextBox Grid.Column="1" Text="{Binding Settings.PipIndex}" Watermark="留空 = 使用 pip 默认/镜像配置" />
+                </Grid>
+                <Grid ColumnDefinitions="170,*">
+                  <TextBlock Classes="label" Text="HuggingFace 镜像" />
+                  <TextBox Grid.Column="1" Text="{Binding Settings.HfMirror}" Watermark="留空 = 直连 huggingface.co" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="控制台" />
+                <Grid ColumnDefinitions="170,*">
+                  <TextBlock Classes="label" Text="最大保留行数" />
+                  <TextBox Grid.Column="1" Width="120" HorizontalAlignment="Left" Text="{Binding Settings.ConsoleMaxLines}" />
+                </Grid>
+                <CheckBox Content="自动滚动到最新日志" IsChecked="{Binding Settings.AutoScrollConsole}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="清空" Command="{Binding ClearConsoleCommand}" Classes="ghost" />
+                  <Button Content="保存日志" Command="{Binding SaveConsoleCommand}" Classes="ghost" />
+                  <Button Content="复制全部" Command="{Binding CopyLogCommand}" Classes="ghost" />
+                  <Button Content="打开日志目录" Command="{Binding OpenLogsCommand}" Classes="ghost" />
+                </StackPanel>
+                <TextBlock Classes="muted" Text="{Binding LastSavedLog}" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="配置文件" />
+                <TextBox Text="{Binding ConfigPath}" IsReadOnly="True" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="保存当前配置" Command="{Binding SaveSettingsCommand}" Classes="primary" />
+                  <Button Content="打开配置目录" Command="{Binding OpenConfigFolderCommand}" Classes="ghost" />
+                  <Button Content="打开项目根目录" Command="{Binding OpenComfyCommand}" Classes="ghost" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ================= 帮助 ================= -->
+      <TabItem Header="帮助">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxWidth="1060">
+          <StackPanel Width="1050" Margin="2,10,2,10" Spacing="12">
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="快速开始" />
+                <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="22" Foreground="{DynamicResource TextLabel}"
+                           Text="1) 在“环境”页点击“一键构建”，或依次执行 1-5 步。2) 回到“启动”页确认端口与目录，点击“启动”。3) 状态变为“运行中”后打开 WebUI。4) 在工作流菜单中加载 workflows\upscale_4x.json 做超分，或加载 txt2img_sd15.json 做简单生图。" />
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="超分工作流" />
+                <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="22" Foreground="{DynamicResource TextLabel}"
+                           Text="加载图片 → Upscale Model Loader 选择 4x-UltraSharp.pth 或 RealESRGAN_x4plus.pth → Upscale Image (using Model) → Save Image。默认 4 倍放大；如需指定输出尺寸，可在后面接 Image Scale。批量处理可参考 scripts\batch_upscale.py。" />
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="参数调试建议" />
+                <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="22" Foreground="{DynamicResource TextLabel}"
+                           Text="RTX 4060 Laptop 8GB：SD1.5 512×512 用默认设置即可；超分大图显存不足时选“低显存 (--lowvram)”或“普通显存”；出现黑图可尝试“强制 FP16”；预览可用 taesd 降低开销。启动失败时查看内嵌控制台最后的 Traceback。" />
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="h2" Text="目录说明" />
+                <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="22" Foreground="{DynamicResource TextLabel}"
+                           Text="runtime\python312：内置 Python 3.12.10；.venv：虚拟环境；ComfyUI：源码；ComfyUI\models：模型；user：--user-directory；output/input：输出与输入；workflows：工作流 JSON；scripts：命令行脚本；logs：日志；config\launcher.json：启动器配置。" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+
+    <GridSplitter Grid.Row="2" Height="5" Background="{DynamicResource PanelBorder}" ResizeDirection="Rows" />
+
+    <!-- 内嵌控制台 -->
+    <Border x:Name="ConsoleHost" Grid.Row="3" Background="{DynamicResource ConsoleBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,1,0,0">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="10,6,10,8">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="内嵌控制台" FontWeight="SemiBold" Foreground="{DynamicResource AccentText}" VerticalAlignment="Center" />
+            <CheckBox Content="自动滚动" IsChecked="{Binding Settings.AutoScrollConsole}" Foreground="{DynamicResource TextLabel}" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Text="{Binding BusyText}" Foreground="{DynamicResource WarningText}" FontSize="12"
+                     VerticalAlignment="Center" HorizontalAlignment="Center" />
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+            <Button Content="清空" Command="{Binding ClearConsoleCommand}" Classes="ghost" Padding="10,4" />
+            <Button Content="保存" Command="{Binding SaveConsoleCommand}" Classes="ghost" Padding="10,4" />
+            <Button Content="复制" Command="{Binding CopyLogCommand}" Classes="ghost" Padding="10,4" />
+          </StackPanel>
+        </Grid>
+
+        <ListBox x:Name="LogList" Grid.Row="1" ItemsSource="{Binding LogLines}" Background="{DynamicResource ConsoleBackground}"
+                 BorderThickness="0" Margin="0,4,0,0" SelectionMode="Multiple">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="4,0" />
+              <Setter Property="MinHeight" Value="0" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="64,46,*">
+                <TextBlock Text="{Binding Time}" Foreground="#64748B" FontFamily="Consolas" FontSize="12" />
+                <TextBlock Grid.Column="1" Text="{Binding Tag}" FontFamily="Consolas" FontSize="12"
+                           FontWeight="Bold" Foreground="{Binding Foreground}" />
+                <TextBlock Grid.Column="2" Text="{Binding Text}" FontFamily="Consolas" FontSize="12"
+                           TextWrapping="Wrap" Foreground="{Binding Foreground}" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+          <TextBox Text="{Binding CommandInput}" Watermark="向 ComfyUI 进程 stdin 发送一行文本（ComfyUI 通常不读取，仅调试用）"
+                   FontFamily="Consolas" Background="{DynamicResource ConsoleInputBackground}"
+                   Foreground="{DynamicResource ConsoleForeground}" BorderBrush="{DynamicResource PanelBorder}" />
+          <Button Grid.Column="1" Content="发送" Command="{Binding SendCommand}" Classes="ghost" Margin="8,0,0,0" />
+        </Grid>
+      </Grid>
+    </Border>
+
+    <!-- 底部状态栏 -->
+    <Border x:Name="StatusBar" Grid.Row="4" Background="{DynamicResource HeaderBackground}" Padding="14,5" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="14">
+          <TextBlock Text="{Binding ServerStateText}" Foreground="{DynamicResource AccentStrong}" FontSize="12" />
+          <TextBlock Text="{Binding StatusDetail}" Classes="muted" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding ServerUrl}" Classes="muted" HorizontalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding ConfigPath}" Classes="muted" TextTrimming="CharacterEllipsis" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

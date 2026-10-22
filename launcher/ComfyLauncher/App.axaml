@@ -1,0 +1,52 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ComfyLauncher.App">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="AppBackground" Color="#0B1220" />
+          <SolidColorBrush x:Key="HeaderBackground" Color="#0E1726" />
+          <SolidColorBrush x:Key="CardBackground" Color="#0F1B2D" />
+          <SolidColorBrush x:Key="PanelBorder" Color="#1E293B" />
+          <SolidColorBrush x:Key="TextPrimary" Color="#E2E8F0" />
+          <SolidColorBrush x:Key="TextMuted" Color="#94A3B8" />
+          <SolidColorBrush x:Key="TextLabel" Color="#CBD5E1" />
+          <SolidColorBrush x:Key="AccentText" Color="#93C5FD" />
+          <SolidColorBrush x:Key="AccentStrong" Color="#7DD3FC" />
+          <SolidColorBrush x:Key="PrimaryButton" Color="#2563EB" />
+          <SolidColorBrush x:Key="DangerButton" Color="#B91C1C" />
+          <SolidColorBrush x:Key="GhostBackground" Color="#1E293B" />
+          <SolidColorBrush x:Key="GhostForeground" Color="#E2E8F0" />
+          <SolidColorBrush x:Key="ConsoleBackground" Color="#070B12" />
+          <SolidColorBrush x:Key="ConsoleForeground" Color="#D6DEE8" />
+          <SolidColorBrush x:Key="ConsoleInputBackground" Color="#0B1220" />
+          <SolidColorBrush x:Key="WarningText" Color="#FBBF24" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="AppBackground" Color="#F3F6FB" />
+          <SolidColorBrush x:Key="HeaderBackground" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="PanelBorder" Color="#D7E0EA" />
+          <SolidColorBrush x:Key="TextPrimary" Color="#0F172A" />
+          <SolidColorBrush x:Key="TextMuted" Color="#64748B" />
+          <SolidColorBrush x:Key="TextLabel" Color="#334155" />
+          <SolidColorBrush x:Key="AccentText" Color="#1D4ED8" />
+          <SolidColorBrush x:Key="AccentStrong" Color="#0369A1" />
+          <SolidColorBrush x:Key="PrimaryButton" Color="#2563EB" />
+          <SolidColorBrush x:Key="DangerButton" Color="#DC2626" />
+          <SolidColorBrush x:Key="GhostBackground" Color="#E8EEF6" />
+          <SolidColorBrush x:Key="GhostForeground" Color="#1E293B" />
+          <SolidColorBrush x:Key="ConsoleBackground" Color="#F8FAFC" />
+          <SolidColorBrush x:Key="ConsoleForeground" Color="#1E293B" />
+          <SolidColorBrush x:Key="ConsoleInputBackground" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="WarningText" Color="#B45309" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+</Application>

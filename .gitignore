@@ -1,0 +1,37 @@
+# ===== 本机部署环境（不提交） =====
+/runtime/
+/.venv/
+/ComfyUI/
+/cache/
+/temp/
+/logs/
+/output/
+/user/
+/input/
+/models/
+
+# ===== 本机配置（含绝对路径，不提交） =====
+/config/*
+!/config/launcher.example.json
+
+# ===== 启动器构建产物 =====
+launcher/**/bin/
+launcher/**/obj/
+launcher/publish/
+
+# ===== Python =====
+__pycache__/
+*.pyc
+*.pyo
+
+# ===== 下载临时文件 / 日志 =====
+*.part
+*.tmp
+*.log
+
+# ===== IDE / 操作系统 =====
+.vs/
+.idea/
+*.user
+Thumbs.db
+desktop.ini

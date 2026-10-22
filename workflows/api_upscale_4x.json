@@ -1,0 +1,49 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "example.png"
+    },
+    "_meta": {
+      "title": "输入图片"
+    }
+  },
+  "2": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "4x-UltraSharp.pth"
+    },
+    "_meta": {
+      "title": "加载超分模型"
+    }
+  },
+  "3": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": [
+        "2",
+        0
+      ],
+      "image": [
+        "1",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "4x 超分"
+    }
+  },
+  "4": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "3",
+        0
+      ],
+      "filename_prefix": "upscaled/ComfyUI"
+    },
+    "_meta": {
+      "title": "保存结果"
+    }
+  }
+}

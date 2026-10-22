@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <AssemblyName>ComfyLauncher</AssemblyName>
+    <RootNamespace>ComfyLauncher</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <AssemblyTitle>ComfyUI SD Launcher</AssemblyTitle>
+    <Product>ComfyUI SD Launcher</Product>
+    <Description>ComfyUI + Stable Diffusion 超分辨率启动器</Description>
+    <Company>@1999Pt</Company>
+    <Authors>@1999Pt</Authors>
+    <Copyright>Copyright © 2026 @1999Pt</Copyright>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <RollForward>LatestMajor</RollForward>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.22" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+</Project>
